@@ -26,7 +26,7 @@ body {
   max-width: 500px;
   margin: 0 auto;
   padding: 25px 20px;
-  background: #fff;
+  background: white;
   border-radius: 20px;
   box-shadow: 0 5px 25px rgba(0,0,0,.06);
 }
@@ -139,7 +139,7 @@ input {
   border: 1px solid #dce2ea;
   border-radius: 11px;
   font-size: 17px;
-  background: #fff;
+  background: white;
   color: #17243a;
   outline: none;
 }
@@ -156,7 +156,7 @@ button {
   border-radius: 11px;
   padding: 14px;
   background: #174b91;
-  color: #fff;
+  color: white;
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
@@ -166,10 +166,6 @@ button {
 button:disabled {
   opacity: .55;
   cursor: not-allowed;
-}
-
-.secondary-button {
-  background: #64748b;
 }
 
 .submit-button {
@@ -236,7 +232,7 @@ button:disabled {
   </div>
 
   <div id="wifiStatus" class="status">
-    ĐANG KIỂM TRA MẠNG...
+    ĐANG KIỂM TRA WIFI CÔNG TY...
   </div>
 
   <div id="mainContent" class="hidden">
@@ -330,14 +326,15 @@ button:disabled {
 <script>
 
 /************************************************
- * 1. CẤU HÌNH HỆ THỐNG
+ * 1. CẤU HÌNH HT SEAPRO
  ************************************************/
 
 const CONFIG = {
+
   COMPANY_IP: '113.161.37.230',
 
-  // DÁN URL WEB APP GOOGLE APPS SCRIPT VÀO ĐÂY
-  API_URL: 'DAN_URL_EXEC_CUA_BAN_VAO_DAY'
+  API_URL: 'https://script.google.com/macros/s/AKfycbwyRPqGHLQ6kmlszqIIFCzOBycGbr1eDQm5zLlyw5Y6xaGMU8AX41UqJ1bTvcqCJ9ho/exec'
+
 };
 
 let cameraStream = null;
@@ -362,6 +359,7 @@ function getCurrentTime() {
   ).padStart(2, '0');
 
   return hours + ':' + minutes;
+
 }
 
 
@@ -385,9 +383,7 @@ async function checkWifi() {
 
     const response = await fetch(
       'https://api.ipify.org?format=json',
-      {
-        cache: 'no-store'
-      }
+      { cache: 'no-store' }
     );
 
     if (!response.ok) {
@@ -451,6 +447,7 @@ async function openCamera() {
       'VUI LÒNG KẾT NỐI WIFI CÔNG TY.';
 
     return;
+
   }
 
   if (!navigator.mediaDevices ||
@@ -460,6 +457,7 @@ async function openCamera() {
       'TRÌNH DUYỆT KHÔNG HỖ TRỢ CAMERA. HÃY DÙNG SAFARI HOẶC CHROME.';
 
     return;
+
   }
 
   button.disabled = true;
@@ -473,17 +471,9 @@ async function openCamera() {
       await navigator.mediaDevices.getUserMedia({
 
         video: {
-          facingMode: {
-            ideal: 'user'
-          },
-
-          width: {
-            ideal: 1280
-          },
-
-          height: {
-            ideal: 720
-          }
+          facingMode: { ideal: 'user' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         },
 
         audio: false
@@ -542,7 +532,7 @@ function stopCamera() {
 
 
 /************************************************
- * 6. HIỂN THỊ KẾT QUẢ AN TOÀN
+ * 6. HIỂN THỊ KẾT QUẢ
  ************************************************/
 
 function showResult(data) {
@@ -591,20 +581,19 @@ function showResult(data) {
 
 
 /************************************************
- * 7. GỬI ĐIỂM DANH ĐẾN GOOGLE APPS SCRIPT
+ * 7. GỬI ĐIỂM DANH ĐẾN GOOGLE SHEETS
  ************************************************/
 
 function submitAttendance() {
 
-  if (submitted) {
-    return;
-  }
+  if (submitted) return;
 
   if (!wifiVerified) {
 
     alert('VUI LÒNG KẾT NỐI WIFI CÔNG TY.');
 
     return;
+
   }
 
   if (!cameraStream ||
@@ -615,6 +604,7 @@ function submitAttendance() {
     alert('VUI LÒNG MỞ CAMERA TRƯỚC KHI ĐIỂM DANH.');
 
     return;
+
   }
 
   const name = document
@@ -630,6 +620,7 @@ function submitAttendance() {
     alert('VUI LÒNG NHẬP HỌ VÀ TÊN.');
 
     return;
+
   }
 
   if (!selectedTime) {
@@ -637,22 +628,12 @@ function submitAttendance() {
     alert('VUI LÒNG CHỌN GIỜ ĐIỂM DANH.');
 
     return;
-  }
 
-  if (CONFIG.API_URL === 'DAN_URL_EXEC_CUA_BAN_VAO_DAY' ||
-      !CONFIG.API_URL.endsWith('/exec')) {
-
-    alert(
-      'CHƯA CẤU HÌNH URL GOOGLE APPS SCRIPT /exec.'
-    );
-
-    return;
   }
 
   const button = document.getElementById('submitButton');
 
   button.disabled = true;
-
   button.innerText = 'ĐANG GHI NHẬN...';
 
   const callbackName =
@@ -680,7 +661,6 @@ function submitAttendance() {
     script.remove();
 
     button.disabled = false;
-
     button.innerText = 'ĐIỂM DANH';
 
     alert(
@@ -740,11 +720,10 @@ function submitAttendance() {
     script.remove();
 
     button.disabled = false;
-
     button.innerText = 'ĐIỂM DANH';
 
     alert(
-      'KHÔNG KẾT NỐI ĐƯỢC GOOGLE APPS SCRIPT. VUI LÒNG KIỂM TRA URL /exec VÀ QUYỀN TRIỂN KHAI.'
+      'KHÔNG KẾT NỐI ĐƯỢC GOOGLE APPS SCRIPT. KIỂM TRA URL VÀ QUYỀN TRIỂN KHAI.'
     );
 
   };
@@ -758,7 +737,7 @@ function submitAttendance() {
 
 
 /************************************************
- * 8. KHỞI ĐỘNG
+ * 8. KHỞI ĐỘNG WEBSITE
  ************************************************/
 
 window.addEventListener('load', function() {
