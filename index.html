@@ -1,1 +1,287 @@
 
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HT SEAPRO - Điểm danh</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;padding:18px;
+  background:#f1f4f8;
+  font-family:Arial,sans-serif;color:#17243a
+}
+.container{
+  max-width:460px;margin:auto;padding:25px 20px;
+  background:white;border-radius:20px;
+  box-shadow:0 5px 25px #00000010
+}
+.header{text-align:center;margin-bottom:24px}
+.brand{font-size:30px;font-weight:800;letter-spacing:2px;color:#174b91}
+.subtitle{font-size:11px;color:#8994a3;margin-top:8px;letter-spacing:1px}
+.status{
+  padding:13px;border-radius:10px;text-align:center;
+  font-size:13px;margin-bottom:20px;background:#f1f5f9
+}
+.ok{background:#eaf8ef;color:#16803d}
+.err{background:#fff0f0;color:#dc2626}
+h3{font-size:15px;color:#174b91;margin:20px 0 12px}
+.camera{
+  width:100%;aspect-ratio:4/3;
+  background:#111827;border-radius:13px;overflow:hidden
+}
+video{width:100%;height:100%;object-fit:cover}
+.note{text-align:center;font-size:12px;color:#64748b;margin:12px 0}
+label{display:block;font-size:14px;font-weight:bold;margin:18px 0 8px}
+input{
+  width:100%;padding:15px;border:1px solid #dce2ea;
+  border-radius:10px;font-size:16px;background:white
+}
+button{
+  width:100%;padding:16px;border:0;border-radius:10px;
+  background:#174b91;color:white;font-weight:bold;
+  font-size:15px;margin-top:15px
+}
+button:disabled{opacity:.5}
+.result{
+  display:none;margin-top:20px;padding:18px;
+  background:#effaf2;border:1px solid #b7e5c5;
+  border-radius:12px;text-align:center
+}
+.result h3{color:#16803d}
+.footer{text-align:center;font-size:10px;color:#9aa5b5;margin-top:25px}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="brand">HT SEAPRO</div>
+    <div class="subtitle">HỆ THỐNG ĐIỂM DANH NHÂN SỰ</div>
+  </div>
+
+  <div id="wifiStatus" class="status">
+    ĐANG KIỂM TRA WIFI...
+  </div>
+
+  <div id="main" style="display:none">
+
+    <h3>01. XÁC NHẬN CÓ MẶT TẠI CÔNG TY</h3>
+
+    <div class="camera">
+      <video id="video" autoplay playsinline muted></video>
+    </div>
+
+    <div id="cameraMessage" class="note">
+      Camera chưa được mở.
+    </div>
+
+    <button id="cameraButton" onclick="openCamera()">
+      MỞ CAMERA
+    </button>
+
+    <label for="employeeName">02. HỌ VÀ TÊN NHÂN SỰ</label>
+    <input id="employeeName" type="text"
+           placeholder="Nhập họ và tên..."
+           autocomplete="name">
+
+    <label for="selectedTime">03. GIỜ ĐIỂM DANH</label>
+    <input id="selectedTime" type="time">
+
+    <button id="submitButton" onclick="submitAttendance()">
+      ĐIỂM DANH
+    </button>
+
+    <div id="result" class="result">
+      <h3>✓ ĐIỂM DANH THÀNH CÔNG</h3>
+      <div id="resultInfo"></div>
+      <p style="font-size:12px;color:#16803d">
+        Vui lòng chụp màn hình và gửi vào nhóm Zalo quản lý.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="footer">HT SEAPRO ENTERTAINMENT</div>
+</div>
+
+<script>
+/* CẤU HÌNH */
+const COMPANY_IP = '113.161.37.230';
+
+/* THAY BẰNG URL WEB APP GOOGLE APPS SCRIPT CỦA BẠN */
+const API_URL = 'DAN_URL_EXEC_CUA_BAN_VAO_DAY';
+
+let cameraStream = null;
+let wifiVerified = false;
+let submitted = false;
+
+/* GIỜ HIỆN TẠI */
+function currentTime(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' +
+         String(d.getMinutes()).padStart(2,'0');
+}
+
+/* KIỂM TRA IP */
+async function checkWifi(){
+  const status = document.getElementById('wifiStatus');
+  try{
+    const r = await fetch('https://api.ipify.org?format=json',
+                          {cache:'no-store'});
+    if(!r.ok) throw new Error('IP unavailable');
+    const data = await r.json();
+
+    if(data.ip === COMPANY_IP){
+      wifiVerified = true;
+      status.className = 'status ok';
+      status.innerText = '✓ ĐÃ KẾT NỐI WIFI HT SEAPRO';
+      document.getElementById('main').style.display = 'block';
+      document.getElementById('selectedTime').value = currentTime();
+    }else{
+      status.className = 'status err';
+      status.innerText = 'VUI LÒNG KẾT NỐI WIFI CÔNG TY';
+    }
+  }catch(e){
+    status.className = 'status err';
+    status.innerText = 'KHÔNG KIỂM TRA ĐƯỢC WIFI. THỬ LẠI.';
+  }
+}
+
+/* CAMERA */
+async function openCamera(){
+  const msg = document.getElementById('cameraMessage');
+  const btn = document.getElementById('cameraButton');
+
+  if(!wifiVerified){
+    msg.innerText = 'Chưa xác thực WiFi công ty.';
+    return;
+  }
+
+  if(!navigator.mediaDevices?.getUserMedia){
+    msg.innerText = 'Trình duyệt không hỗ trợ camera. Hãy mở bằng Safari hoặc Chrome.';
+    return;
+  }
+
+  try{
+    stopCamera();
+
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:'user'},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
+      audio:false
+    });
+
+    const video = document.getElementById('video');
+    video.srcObject = cameraStream;
+    await video.play();
+
+    msg.innerText = 'CAMERA ĐANG HOẠT ĐỘNG. HÃY NHÌN THẲNG VÀO CAMERA.';
+    btn.innerText = 'CAMERA ĐÃ BẬT';
+  }catch(e){
+    msg.innerText = 'LỖI CAMERA: '+e.name+'. Kiểm tra quyền camera trình duyệt.';
+    console.error(e);
+  }
+}
+
+/* TẮT CAMERA */
+function stopCamera(){
+  if(cameraStream){
+    cameraStream.getTracks().forEach(t=>t.stop());
+    cameraStream = null;
+  }
+}
+
+/* GỬI DỮ LIỆU ĐIỂM DANH QUA JSONP */
+function submitAttendance(){
+  if(submitted) return;
+
+  if(!wifiVerified){
+    alert('Bạn chưa kết nối WiFi công ty.');
+    return;
+  }
+
+  if(!cameraStream ||
+     !cameraStream.getVideoTracks().some(t=>t.readyState==='live')){
+    alert('Vui lòng mở camera trước khi điểm danh.');
+    return;
+  }
+
+  const name = document.getElementById('employeeName').value.trim();
+  const time = document.getElementById('selectedTime').value;
+
+  if(!name){
+    alert('Vui lòng nhập họ và tên.');
+    return;
+  }
+
+  if(!time){
+    alert('Vui lòng chọn giờ điểm danh.');
+    return;
+  }
+
+  if(API_URL === 'DAN_URL_EXEC_CUA_BAN_VAO_DAY'){
+    alert('Chưa cấu hình URL Google Apps Script. Chưa thể ghi điểm danh.');
+    return;
+  }
+
+  const btn = document.getElementById('submitButton');
+  btn.disabled = true;
+  btn.innerText = 'ĐANG GHI NHẬN...';
+
+  const callbackName = 'attendanceCallback_' + Date.now();
+  const script = document.createElement('script');
+  const params = new URLSearchParams({
+    action:'attendance',
+    name:name,
+    time:time,
+    callback:callbackName
+  });
+
+  window[callbackName] = function(data){
+    delete window[callbackName];
+    script.remove();
+
+    btn.disabled = false;
+    btn.innerText = 'ĐIỂM DANH';
+
+    if(data && data.success){
+      submitted = true;
+      document.getElementById('resultInfo').innerText =
+        'Họ tên: '+data.name+
+        '\nBộ phận: MAKEUP'+
+        '\nGiờ chọn: '+data.selectedTime+
+        '\nThời gian ghi nhận: '+data.timestamp;
+
+      document.getElementById('result').style.display = 'block';
+      btn.innerText = 'ĐÃ ĐIỂM DANH';
+      btn.disabled = true;
+    }else{
+      alert(data?.message || 'Không ghi nhận được điểm danh.');
+    }
+  };
+
+  script.onerror = function(){
+    delete window[callbackName];
+    script.remove();
+    btn.disabled = false;
+    btn.innerText = 'ĐIỂM DANH';
+    alert('Không kết nối được máy chủ điểm danh.');
+  };
+
+  script.src = API_URL + '?' + params.toString();
+  document.body.appendChild(script);
+}
+
+window.addEventListener('load',checkWifi);
+window.addEventListener('pagehide',stopCamera);
+</script>
+</body>
+</html>
+
