@@ -117,6 +117,40 @@ input:focus {
   border-color: #174b91;
 }
 
+.attendance-type {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0 20px;
+}
+
+.type-option {
+  flex: 1;
+  cursor: pointer;
+}
+
+.type-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.type-option span {
+  display: block;
+  text-align: center;
+  padding: 16px 10px;
+  border: 2px solid #d8dee8;
+  border-radius: 12px;
+  font-weight: bold;
+  color: #53677f;
+  background: #fff;
+}
+
+.type-option input:checked + span {
+  border-color: #174b91;
+  background: #eaf2ff;
+  color: #174b91;
+}
+
 button {
   width: 100%;
   padding: 18px 12px;
@@ -220,6 +254,31 @@ button:disabled {
       với thời gian làm việc thực tế.
     </div>
 
+    <h3>04. HÌNH THỨC ĐIỂM DANH</h3>
+
+    <div class="attendance-type">
+
+      <label class="type-option">
+        <input
+          type="radio"
+          name="attendanceType"
+          value="CHECK IN"
+          checked
+        >
+        <span>CHECK IN</span>
+      </label>
+
+      <label class="type-option">
+        <input
+          type="radio"
+          name="attendanceType"
+          value="CHECK OUT"
+        >
+        <span>CHECK OUT</span>
+      </label>
+
+    </div>
+
     <button id="submitBtn" onclick="submitAttendance()" disabled>
       ĐIỂM DANH
     </button>
@@ -292,6 +351,7 @@ async function checkCompanyWifi() {
         '<br>Vui lòng kết nối WiFi công ty.';
 
       return;
+
     }
 
     wifiVerified = true;
@@ -317,7 +377,7 @@ async function checkCompanyWifi() {
 
 
 /****************************************
- * KIỂM TRA GOOGLE APPS SCRIPT
+ * JSONP
  ****************************************/
 
 function jsonpRequest(params, timeout = 20000) {
@@ -384,6 +444,10 @@ function jsonpRequest(params, timeout = 20000) {
 }
 
 
+/****************************************
+ * KIỂM TRA GOOGLE APPS SCRIPT
+ ****************************************/
+
 async function checkAPI() {
 
   const status = document.getElementById('networkStatus');
@@ -447,6 +511,7 @@ async function openCamera() {
       'Trình duyệt không hỗ trợ camera. Hãy mở website bằng HTTPS và trình duyệt tương thích.';
 
     return;
+
   }
 
   openBtn.disabled = true;
@@ -555,6 +620,10 @@ async function submitAttendance() {
   const selectedTime = document.getElementById('attendanceTime')
     .value;
 
+  const attendanceType = document.querySelector(
+    'input[name="attendanceType"]:checked'
+  ).value;
+
   const resultBox = document.getElementById('result');
   const submitBtn = document.getElementById('submitBtn');
 
@@ -568,6 +637,7 @@ async function submitAttendance() {
 
     alert('Vui lòng mở camera trước khi điểm danh.');
     return;
+
   }
 
   if (!name) {
@@ -584,7 +654,8 @@ async function submitAttendance() {
   if (!confirm(
     'Xác nhận điểm danh?\n\n' +
     'Họ tên: ' + name +
-    '\nGiờ: ' + selectedTime
+    '\nGiờ: ' + selectedTime +
+    '\nHình thức: ' + attendanceType
   )) {
     return;
   }
@@ -602,7 +673,8 @@ async function submitAttendance() {
 
       action: 'attendance',
       name: name,
-      time: selectedTime
+      time: selectedTime,
+      type: attendanceType
 
     }, 30000);
 
@@ -620,6 +692,7 @@ async function submitAttendance() {
       '✓ ĐIỂM DANH THÀNH CÔNG' +
       '<br>Nhân sự: ' + escapeHTML(response.name) +
       '<br>Giờ đã chọn: ' + escapeHTML(response.selectedTime) +
+      '<br>Hình thức: ' + escapeHTML(response.attendanceType || attendanceType) +
       '<br>Thời gian ghi nhận: ' + escapeHTML(response.timestamp) +
       '<br><br>Vui lòng chụp màn hình và gửi vào Zalo.';
 
@@ -644,7 +717,7 @@ async function submitAttendance() {
 
 
 /****************************************
- * LÀM SẠCH NỘI DUNG HIỂN THỊ
+ * LÀM SẠCH NỘI DUNG
  ****************************************/
 
 function escapeHTML(value) {
